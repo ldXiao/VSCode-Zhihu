@@ -1,6 +1,7 @@
 import { getExtensionPath } from "./globa-var";
 import * as path from "path"
-import * as FileCookieStore from "tough-cookie-filestore";
+// import * as FileCookieStore from "tough-cookie-filestore";
+const FileCookieStore = require('tough-cookie-file-store').FileCookieStore
 import { CookieJar, Store } from "tough-cookie";
 import { writeFileSync } from "fs";
 

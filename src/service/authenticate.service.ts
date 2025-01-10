@@ -88,9 +88,9 @@ export class AuthenticateService {
 			let base64Image = captchaImg['img_base64'].replace('\n', '');
 			fs.writeFileSync(path.join(getExtensionPath(), './captcha.jpg'), base64Image, 'base64');
 			const panel = vscode.window.createWebviewPanel("zhihu", "验证码", { viewColumn: vscode.ViewColumn.One, preserveFocus: true });
-			const imgSrc = panel.webview.asWebviewUri(vscode.Uri.file(
+			const imgSrc = vscode.Uri.file(
 				path.join(getExtensionPath(), './captcha.jpg')
-			));
+			).with({ scheme: 'vscode-resource' });
 
 			this.webviewService.renderHtml({
 				title: '验证码',
@@ -253,9 +253,9 @@ export class AuthenticateService {
 		});
 		fs.writeFileSync(path.join(getExtensionPath(), 'qrcode.png'), qrcode);
 		const panel = vscode.window.createWebviewPanel("zhihu", "验证码", { viewColumn: vscode.ViewColumn.One, preserveFocus: true });
-		const imgSrc = panel.webview.asWebviewUri(vscode.Uri.file(
-			path.join(getExtensionPath(), './qrcode.png')
-		))
+		const imgSrc = vscode.Uri.file(
+			path.join(getExtensionPath(), './captcha.jpg')
+		).with({ scheme: 'vscode-resource' });
 		this.webviewService.renderHtml(
 			{
 				title: '二维码',
@@ -323,7 +323,7 @@ export class AuthenticateService {
 		const state = uri.match(reg)[0].replace(reg, '$1');
 		const $ = cheerio.load(html)
 		const panel = vscode.window.createWebviewPanel("zhihu", "微信登录", { viewColumn: vscode.ViewColumn.One, preserveFocus: true });
-		const imgSrc = WeixinLoginQRCodeAPI($('img')[0].attribs['src']);
+		const imgSrc = WeixinLoginQRCodeAPI($('img').attr('src'));
 		const uuid = imgSrc.match(/\/connect\/qrcode\/([\w\d]*)/)[1];
 		this.webviewService.renderHtml(
 			{
@@ -383,7 +383,7 @@ export class AuthenticateService {
 		const state = uri.match(reg)[0].replace(reg, '$1');
 		const $ = cheerio.load(html)
 		const panel = vscode.window.createWebviewPanel("zhihu", "微信登录", { viewColumn: vscode.ViewColumn.One, preserveFocus: true });
-		const imgSrc = WeixinLoginQRCodeAPI($('img')[0].attribs['src']);
+		const imgSrc = WeixinLoginQRCodeAPI($('img').attr('src'));
 		const uuid = imgSrc.match(/\/connect\/qrcode\/([\w\d]*)/)[1];
 		this.webviewService.renderHtml(
 			{
@@ -459,7 +459,6 @@ export class AuthenticateService {
 					console.log('Window is disposed');
 				});
 				return Promise.resolve(true);
-				break;
 			case undefined:
 				this.weixinPolling(p, uuid, panel, state)
 				return Promise.resolve(false);
@@ -512,7 +511,6 @@ export class AuthenticateService {
 					console.log('Window is disposed');
 				});
 				return Promise.resolve(true);
-				break;
 			case undefined:
 				// this.weixinPolling(p, uuid, panel, state)
 				return Promise.resolve(false);
