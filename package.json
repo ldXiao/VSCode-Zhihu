@@ -20,6 +20,8 @@
 		"onCommand:zhihu.jianshuPublish",
 		"onCommand:zhihu.search",
 		"onCommand:zhihu.login",
+		"onCommand:zhihu.forceLogin",
+		"onCommand:zhihu.testQrcode",
 		"onCommand:zhihu.testModernQrcode",
 		"onCommand:zhihu.logout",
 		"onCommand:zhihu.previousPage",
@@ -169,6 +171,14 @@
 					"light": "res/media/light/login.svg",
 					"dark": "res/media/dark/login.svg"
 				}
+			},
+			{
+				"command": "zhihu.forceLogin",
+				"title": "Zhihu: Force Login (Skip Auth Check)"
+			},
+			{
+				"command": "zhihu.testQrcode",
+				"title": "Zhihu: Test QR Code API"
 			},
 			{
 				"command": "zhihu.testModernQrcode",

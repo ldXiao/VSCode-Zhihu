@@ -87,11 +87,21 @@ export async function activate( context: vscode.ExtensionContext ) {
         return authenticateService.login();
     }
     );
+    vscode.commands.registerCommand( "zhihu.forceLogin", () => {
+        return authenticateService.forceLogin();
+    }
+    );
     vscode.commands.registerCommand( "zhihu.jianshuLogin", () => {
         authenticateService.jianshuLogin();
     } );
     vscode.commands.registerCommand( "zhihu.logout", () => {
         return authenticateService.logout();
+    }
+    );
+    
+    // Test command for QR code API
+    vscode.commands.registerCommand( "zhihu.testQrcode", () => {
+        return authenticateService.testQrcodeAPI();
     }
     );
     
