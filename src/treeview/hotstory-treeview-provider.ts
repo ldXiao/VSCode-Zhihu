@@ -86,7 +86,7 @@ export class ZhihuTreeItem extends LinkableTreeItem  {
         public target?: IStoryTarget,
         public page?: number,
     ) {
-        super( label, collapsibleState, target.url ? target.url : "" );
+        super( label, collapsibleState, target && target.url ? target.url : "" );
     }
 
     // get tooltip(): string {

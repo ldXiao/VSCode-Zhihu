@@ -20,6 +20,7 @@
 		"onCommand:zhihu.jianshuPublish",
 		"onCommand:zhihu.search",
 		"onCommand:zhihu.login",
+		"onCommand:zhihu.testModernQrcode",
 		"onCommand:zhihu.logout",
 		"onCommand:zhihu.previousPage",
 		"onCommand:zhihu.nextPage",
@@ -168,6 +169,10 @@
 					"light": "res/media/light/login.svg",
 					"dark": "res/media/dark/login.svg"
 				}
+			},
+			{
+				"command": "zhihu.testModernQrcode",
+				"title": "Zhihu: Test Modern QR Code Login"
 			},
 			{
 				"command": "zhihu.logout",
@@ -372,7 +377,9 @@
 		"axios": "^1.7.9",
 		"Base64": "^1.1.0",
 		"bluebird": "^3.7.2",
+		"cheerio": "^1.1.2",
 		"crypto": "^1.0.1",
+		"domutils": "^3.2.2",
 		"form-urlencoded": "^4.1.1",
 		"js-base64": "^3.7.2",
 		"jsdom": "^18.1.1",
@@ -384,6 +391,7 @@
 		"on-change": "^1.6.2",
 		"pug": "^3.0.3",
 		"request": "^2.88.0",
+		"request-promise": "^4.2.6",
 		"tough-cookie": "^4.1.4",
 		"tough-cookie-file-store": "^2.0.3",
 		"vscode": "^1.1.37",

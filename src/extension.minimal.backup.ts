@@ -94,12 +94,6 @@ export async function activate( context: vscode.ExtensionContext ) {
         return authenticateService.logout();
     }
     );
-    
-    // Test command for modern QR code API
-    vscode.commands.registerCommand( "zhihu.testModernQrcode", () => {
-        return authenticateService.testModernQrcodeAPI();
-    }
-    );
     vscode.window.registerTreeDataProvider(
         "zhihu-feed",
         feedTreeViewProvider

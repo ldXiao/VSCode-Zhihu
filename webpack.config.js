@@ -21,6 +21,11 @@ const config = {
   devtool: 'source-map',
   externals: [{
     vscode: 'commonjs vscode', // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
+    // Exclude problematic native dependencies
+    'canvas': 'commonjs2 canvas',
+    'jsdom': 'commonjs2 jsdom',
+    'bufferutil': 'commonjs2 bufferutil',
+    'utf-8-validate': 'commonjs2 utf-8-validate'
   },
   // {
   //   'uglify-js': 'uglify-js'

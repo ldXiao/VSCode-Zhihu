@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import * as cookieUtil from "tough-cookie";
+import * as toughCookie from "tough-cookie";
 
 export class CookieService {
 	
 	constructor(protected context: vscode.ExtensionContext,
-		protected cookieJar: cookieUtil.CookieJar) {
+		protected cookieJar: any) {
 	}
 	/**
 	 * getCookieString
@@ -17,7 +17,7 @@ export class CookieService {
 
 	public putCookie(_cookies: string[], currentUrl: string) {
 		_cookies.map(c => {
-			return cookieUtil.Cookie.parse(c);
+			return toughCookie.Cookie?.parse(c);
 		}).forEach(c => {
 			this.cookieJar.setCookieSync(c, currentUrl);
 		});

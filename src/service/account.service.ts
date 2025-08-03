@@ -32,7 +32,7 @@ export class AccountService {
 			console.error('Http error', err);
 			return false;
 		}
-		return Promise.resolve(checkIfSignedIn ? checkIfSignedIn.statusCode == '302' : false);
+		return Promise.resolve(checkIfSignedIn ? checkIfSignedIn.statusCode == 302 : false);
 	}
 
 }

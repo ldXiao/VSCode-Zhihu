@@ -1,5 +1,6 @@
 import * as httpClient from "request-promise";
-import { Cookie, CookieJar, Store } from "tough-cookie";
+import * as toughCookie from "tough-cookie";
+const { Cookie, CookieJar } = toughCookie;
 import { DefaultHTTPHeader } from "../const/HTTP";
 import { ZhihuDomain } from "../const/URL";
 import {
@@ -118,6 +119,6 @@ export class HttpService {
 
 var httpService = new HttpService();
 
-export const sendRequest = httpService.sendRequest;
-export const clearCookie = httpService.clearCookie;
-export const clearCache = httpService.clearCache;
+export const sendRequest = httpService.sendRequest.bind(httpService);
+export const clearCookie = httpService.clearCookie.bind(httpService);
+export const clearCache = httpService.clearCache.bind(httpService);

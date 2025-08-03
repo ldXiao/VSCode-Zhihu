@@ -639,7 +639,7 @@ export class PublishService {
     }
 
     shebangParser(text: string): URL {
-        let shebangRegExp = /#[!！]\s*((https?:\/\/)?(.+))$/i;
+        let shebangRegExp = /#[!]\s*((https?:\/\/)?(.+))$/i;
         let lf = text.indexOf("\n");
         if (lf < 0) lf = text.length;
         let link = text.slice(0, lf);
