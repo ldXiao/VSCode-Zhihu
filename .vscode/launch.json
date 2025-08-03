@@ -1,52 +1,20 @@
 // A launch configuration that compiles the extension and then opens it inside a new window
 {
-    "version": "0.2.0",
+    "version": "2.0.0",
     "configurations": [
         {
-            "type": "node",
-            "request": "launch",
-            "name": "launch script",
-            "program": "${file}"
-            // "args": ["${file}"]
-        },
-        {
-            "name": "Launch Extension",
+            "name": "Run Extension",
             "type": "extensionHost",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
             "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceRoot}",
+                "--extensionDevelopmentPath=${workspaceFolder}"
             ],
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            // "outFiles": [
-            //     "${workspaceRoot}/dist/**"
-            // ],
-            "preLaunchTask": "Run Develop"
-        },
-        {
-			"name": "Run Extension Tests",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
-            ],
-            "stopOnEntry": false,
-			// "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
-			"preLaunchTask": "npm: compile"
-		},
-        {
-            "type": "node",
-            "request": "attach",
-            "name": "Attach to Extension Host",
-            "protocol": "inspector",
-            "port": 5870,
-            "restart": true,
             "outFiles": [
-                "${workspaceRoot}/dist/*"
+                "${workspaceFolder}/dist/**/*.js",
+                "${workspaceFolder}/out/**/*.js"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
             ]
         }
     ]
