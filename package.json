@@ -384,7 +384,7 @@
 		"on-change": "^1.6.2",
 		"pug": "^3.0.3",
 		"request": "^2.88.0",
-		"tough-cookie": "^5.0.0",
+		"tough-cookie": "^4.1.4",
 		"tough-cookie-file-store": "^2.0.3",
 		"vscode": "^1.1.37",
 		"zhihu-encrypt": ">=1.0.0",
