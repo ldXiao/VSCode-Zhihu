@@ -58,7 +58,6 @@ module.exports = {
         ],
         "@typescript-eslint/quotes": [
             "error",
-            "double",
             {
                 "avoidEscape": true
             }
@@ -144,7 +143,7 @@ module.exports = {
         ],
         "max-classes-per-file": [
             "error",
-            1
+            10
         ],
         "max-len": [
             "error",

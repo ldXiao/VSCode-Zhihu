@@ -1,4 +1,4 @@
-import * as OSS from "ali-oss";
+// import * as OSS from "ali-oss";
 import * as childProcess from "child_process";
 import * as fs from "fs";
 import * as md5 from "md5";
@@ -127,6 +127,8 @@ export class PasteService {
         const prefetchBody: IImageUploadToken = prefetchResp.body;
         const upload_file = prefetchBody.upload_file;
         if (prefetchBody.upload_token) {
+            // OSS functionality temporarily disabled due to dependency issues
+            /*
             zhihu_agent.options.accessKeyId =
                 prefetchBody.upload_token.access_id;
             zhihu_agent.options.accessKeySecret =
@@ -151,6 +153,11 @@ export class PasteService {
                 .catch((e) => {
                     Output(`上传图片${link}失败！`, "warn");
                 });
+            */
+            // Fallback to hash-based naming for now
+            if (insert) {
+                this.insertImageLink(`v2-${hash}${path.extname(link)}`);
+            }
         } else {
             if (insert) {
                 this.insertImageLink(`v2-${hash}${path.extname(link)}`);

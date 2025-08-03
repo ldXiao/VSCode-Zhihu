@@ -86,13 +86,9 @@ export class ZhihuTreeItem extends LinkableTreeItem  {
 		super(label, collapsibleState, target && target.url ? target.url : '');
 	}
 
-	get tooltip(): string {
-		return this.target && this.target.excerpt ? this.target.excerpt : '';
-	}
+	tooltip: string = this.target && this.target.excerpt ? this.target.excerpt : '';
 
-	get description(): string {
-		return this.target && this.target.excerpt ? this.target.excerpt : '';
-	}
+	description: string = this.target && this.target.excerpt ? this.target.excerpt : '';
 
 	// iconPath = {
 	// 	light: vscode.ThemeIcon.File,

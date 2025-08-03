@@ -53,6 +53,11 @@ export class WebviewService {
 	}
 
 	public async openWebview(object: ITarget & any) {
+		if (!object) {
+			vscode.window.showErrorMessage('无效的对象，无法打开网页视图');
+			return;
+		}
+
 		if (object.type == MediaTypes.question) {
 
 			const includeContent = "data[*].is_normal,content,voteup_count;";
@@ -114,6 +119,10 @@ export class WebviewService {
 			})
 			this.registerEvent(panel, { type: MediaTypes.answer, id: object.id }, `${AnswerURL}/${body.id}`)
 		} else if (object.type == MediaTypes.article) {
+			if (!object.url) {
+				vscode.window.showErrorMessage('文章缺少URL信息');
+				return;
+			}
 			let article: IArticle = await sendRequest({
 				uri: `${object.url}?include=voteup_count`,
 				json: true,

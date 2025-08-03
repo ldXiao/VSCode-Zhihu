@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { IProfile } from "../model/target/target";
 import { PasteService } from "./paste.service";
 import { ZhihuPicReg } from "../const/REG";
-import Token = require("markdown-it/lib/token");
+import { Token } from 'markdown-it'
 
 export class PipeService {
 	public profile: IProfile;

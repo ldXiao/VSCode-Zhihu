@@ -127,13 +127,9 @@ export class FeedTreeItem extends LinkableTreeItem {
 		super(label, collapsibleState, target ? target.url : '');
 	}
 
-	get tooltip(): string | undefined {
-		return this.target ? this.target.excerpt : '';
-	}
+	tooltip: string | undefined = this.target ? this.target.excerpt : '';
 
-	get description(): string {
-		return this.target && this.target.excerpt ? this.target.excerpt : '';
-	}
+	description: string = this.target && this.target.excerpt ? this.target.excerpt : '';
 
 	iconPath = this.avatarUrl ? vscode.Uri.parse(this.avatarUrl) : false;
 
@@ -156,13 +152,9 @@ export class EventTreeItem extends vscode.TreeItem {
 		super(removeSpace(removeHtmlTag(event.content)).slice(0, 12) + '...', collapsibleState);
 	}
 
-	get tooltip(): string | undefined {
-		return removeHtmlTag(this.event.content);
-	}
+	tooltip: string | undefined = removeHtmlTag(this.event.content);
 
-	get description(): string {
-		return beautifyDate(this.event.date);
-	}
+	description: string = beautifyDate(this.event.date);
 
 	iconPath = false;
 
