@@ -107,9 +107,19 @@ export async function activate( context: vscode.ExtensionContext ) {
     
     // Test command for modern QR code API
     vscode.commands.registerCommand( "zhihu.testModernQrcode", () => {
-        return authenticateService.testModernQrcodeAPI();
+        return authenticateService.testQrcodeAPI();
     }
     );
+    
+    // Debug command to test anti-bot headers
+    vscode.commands.registerCommand("zhihu.debugHeaders", async () => {
+        try {
+            const result = await authenticateService.debugAntiBotHeaders();
+            vscode.window.showInformationMessage(`Headers debug completed: ${result}`);
+        } catch (error) {
+            vscode.window.showErrorMessage(`Headers debug failed: ${error.message}`);
+        }
+    });
     vscode.window.registerTreeDataProvider(
         "zhihu-feed",
         feedTreeViewProvider

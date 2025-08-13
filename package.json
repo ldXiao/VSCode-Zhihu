@@ -23,6 +23,7 @@
 		"onCommand:zhihu.forceLogin",
 		"onCommand:zhihu.testQrcode",
 		"onCommand:zhihu.testModernQrcode",
+		"onCommand:zhihu.debugHeaders",
 		"onCommand:zhihu.logout",
 		"onCommand:zhihu.previousPage",
 		"onCommand:zhihu.nextPage",
@@ -183,6 +184,10 @@
 			{
 				"command": "zhihu.testModernQrcode",
 				"title": "Zhihu: Test Modern QR Code Login"
+			},
+			{
+				"command": "zhihu.debugHeaders",
+				"title": "Zhihu: Debug Anti-Bot Headers"
 			},
 			{
 				"command": "zhihu.logout",
