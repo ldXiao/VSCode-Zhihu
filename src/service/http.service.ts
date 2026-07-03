@@ -9,7 +9,7 @@ import {
     clearCookieStore,
     saveCookieJar,
 } from "../global/cookie";
-import { Output } from "../global/logger";
+import { getEnv } from "../core/env";
 import { IProfile } from "../model/target/target";
 
 interface CacheItem {
@@ -37,15 +37,28 @@ export class HttpService {
             : { ...DefaultHTTPHeader };
         options.headers = { ...baseHeaders, ...(options.headers || {}) };
 
-        if (this.xsrfToken) {
-            options.headers["x-xsrftoken"] = this.xsrfToken;
-        }
+        let cookieStr = "";
         try {
-            options.headers["cookie"] = getCookieJar().getCookieStringSync(
-                options.uri
-            );
+            cookieStr = getCookieJar().getCookieStringSync(options.uri);
+            options.headers["cookie"] = cookieStr;
         } catch (error) {
             console.log(error);
+        }
+
+        // Write endpoints (POST/PUT/PATCH/DELETE) require the XSRF token. Prefer
+        // one captured from a response, else read `_xsrf` straight from the jar
+        // (the persisted session has it, so the very first write still works).
+        const xsrfMatch = /(?:^|;\s*)_xsrf=([^;]+)/.exec(cookieStr);
+        const xsrf = this.xsrfToken || (xsrfMatch ? decodeURIComponent(xsrfMatch[1]) : "");
+        if (xsrf) {
+            options.headers["x-xsrftoken"] = xsrf;
+        }
+
+        // `x-zse-93` (an unsigned client-version tag) is fine for GET reads but
+        // makes write endpoints reject with "请升级客户端" — drop it for writes.
+        const method = String(options.method || "get").toLowerCase();
+        if (method !== "get" && options.headers["x-zse-93"]) {
+            delete options.headers["x-zse-93"];
         }
         // Let request/request-promise transparently decode gzip/deflate so JSON
         // bodies are not returned as garbled compressed bytes.
@@ -97,7 +110,7 @@ export class HttpService {
             }
         } catch (error) {
             // vscode.window.showInformationMessage('请求错误');
-            Output(error);
+            getEnv().log(String(error));
             return Promise.resolve(null);
         }
         if (returnBody) {

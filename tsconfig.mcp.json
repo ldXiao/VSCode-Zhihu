@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"module": "node16",
+		"moduleResolution": "node16",
+		"target": "es2020",
+		"lib": ["es2020"],
+		"outDir": "dist-mcp",
+		"rootDir": "src",
+		"sourceMap": false,
+		"esModuleInterop": false,
+		"allowJs": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true
+	},
+	"include": [
+		"src/mcp/**/*",
+		"src/core/**/*",
+		"src/service/http.service.ts",
+		"src/service/browser-session.service.ts",
+		"src/global/cookie.ts",
+		"src/const/**/*",
+		"src/model/**/*"
+	],
+	"exclude": ["node_modules"]
+}

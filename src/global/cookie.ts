@@ -1,4 +1,4 @@
-import { getExtensionPath } from "./globa-var";
+import { getEnv } from "../core/env";
 import * as path from "path";
 import * as toughCookie from "tough-cookie";
 const { CookieJar, MemoryCookieStore } = toughCookie;
@@ -20,7 +20,7 @@ import { writeFileSync, readFileSync, existsSync } from "fs";
 let cookieJar: any;
 
 function cookieFilePath(): string {
-	return path.join(getExtensionPath(), "./cookie.json");
+	return path.join(getEnv().dataDir, "./cookie.json");
 }
 
 function loadCookie() {

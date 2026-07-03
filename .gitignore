@@ -19,3 +19,4 @@ cache.json
 *.log
 .browser-login-profile
 .browser-login-profile-smoke
+dist-mcp

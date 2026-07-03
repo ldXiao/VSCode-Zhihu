@@ -1,9 +1,8 @@
 import * as cp from "child_process";
 import * as path from "path";
-import { getExtensionPath } from "../global/globa-var";
-import { Output } from "../global/logger";
+import { getEnv } from "../core/env";
 import { ZhihuUserAgent } from "../const/HTTP";
-import { findBrowser, getFreePort, httpGetJson, CDPClient } from "./browser-cookie.service";
+import { findBrowser, getFreePort, httpGetJson, CDPClient } from "../core/browser-cdp";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -49,7 +48,7 @@ class BrowserSession {
 	private queue: Promise<any> = Promise.resolve();
 
 	private profileDir(): string {
-		return path.join(getExtensionPath(), ".browser-login-profile");
+		return path.join(getEnv().dataDir, ".browser-login-profile");
 	}
 
 	private async start(): Promise<void> {
@@ -69,7 +68,7 @@ class BrowserSession {
 			"--disable-features=UseEcoQoSForBackgroundProcess",
 			"about:blank",
 		];
-		Output(`启动后台浏览器加载知乎内容 (${browser.name})...`, "info");
+		getEnv().log(`启动后台浏览器加载知乎内容 (${browser.name})...`, "info");
 		this.child = cp.spawn(browser.path, args, { stdio: "ignore", detached: false });
 		this.child.on("exit", () => {
 			this.child = null;

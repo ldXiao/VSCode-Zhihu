@@ -21,6 +21,8 @@
 		"onCommand:zhihu.search",
 		"onCommand:zhihu.login",
 		"onCommand:zhihu.logout",
+		"onCommand:zhihu.saveDraft",
+		"onCommand:zhihu.publishDraft",
 		"onCommand:zhihu.previousPage",
 		"onCommand:zhihu.nextPage",
 		"onCommand:zhihu.uploadImageFromClipboard",
@@ -169,6 +171,14 @@
 				"title": "Zhihu: Logout"
 			},
 			{
+				"command": "zhihu.saveDraft",
+				"title": "Zhihu: Save as Draft"
+			},
+			{
+				"command": "zhihu.publishDraft",
+				"title": "Zhihu: Publish Draft"
+			},
+			{
 				"command": "zhihu.previousPage",
 				"title": "Zhihu: PreviousPage"
 			},
@@ -208,6 +218,16 @@
 					"command": "zhihu.publish",
 					"when": "resourceLangId == markdown",
 					"group": "zhihu@0"
+				},
+				{
+					"command": "zhihu.saveDraft",
+					"when": "resourceLangId == markdown",
+					"group": "zhihu@1"
+				},
+				{
+					"command": "zhihu.publishDraft",
+					"when": "resourceLangId == markdown",
+					"group": "zhihu@1"
 				},
 				{
 					"command": "zhihu.uploadImageFromExplorer",
@@ -329,7 +349,13 @@
 		"watch": "tsc -watch -p ./",
 		"test": "npm run compile && node ./out/test/runTest.js",
 		"lint": "eslint -c .eslintrc.js --ext .ts ./src/**/*.ts",
-		"build-mermaid": "webpack --mode=production --config ./build/mermaid.webpack.config.js"
+		"build-mermaid": "webpack --mode=production --config ./build/mermaid.webpack.config.js",
+		"build-mcp": "tsc -p tsconfig.mcp.json",
+		"build-all": "webpack --mode production && tsc -p tsconfig.mcp.json",
+		"mcp": "node ./dist-mcp/mcp/index.js"
+	},
+	"bin": {
+		"zhihu-mcp": "./dist-mcp/mcp/index.js"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.15.5",
@@ -363,6 +389,7 @@
 		"webpack-cli": ">=4.8.0"
 	},
 	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.29.0",
 		"@types/cheerio": ">=0.22.17",
 		"ali-oss": "^6.5.1",
 		"axios": "^1.7.9",
@@ -388,6 +415,7 @@
 		"vscode": "^1.1.36",
 		"ws": "^8.18.0",
 		"zhihu-encrypt": ">=1.0.0",
-		"zhihu-markdown": ">=1.0.3"
+		"zhihu-markdown": ">=1.0.3",
+		"zod": "^4.4.3"
 	}
 }

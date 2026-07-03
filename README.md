@@ -16,6 +16,57 @@
 
 基于 VSCode 的知乎客户端提供包括阅读，搜索，创作，发布等一站式服务，内容加载速度比 Web 端更快，创新的 Markdown-Latex 混合语法让内容创作者更方便地插入代码块，数学公式，并一键发布至知乎平台。项目由 [牛岱](https://www.zhihu.com/people/niu-dai-68-44) 独立设计开发，喜欢的话请献出你的 [⭐](https://github.com/niudai/VSCode-Zhihu '给一个Star')。
 
+> 本仓库同时构建两个产物，共享同一份 vscode 无关的核心 (`src/core`)：
+> **① VSCode 扩展**，**② 知乎 MCP Server**（供 AI Agent 登录/阅读/发布知乎，见下方 [MCP Server](#-mcp-server)）。
+
+## 🤖 MCP Server
+
+`src/mcp` 是一个独立的 [MCP](https://modelcontextprotocol.io) 服务器，把知乎的登录、阅读、发布能力暴露成工具，供 Claude 等 AI Agent 调用。
+
+**构建并运行：**
+
+```bash
+npm install --legacy-peer-deps
+npm run build-mcp          # 输出到 dist-mcp/
+node dist-mcp/mcp/index.js # 通过 stdio 提供 MCP 服务
+```
+
+**在 Claude Code 中注册：**
+
+```bash
+claude mcp add zhihu -- node /绝对路径/VSCode-Zhihu/dist-mcp/mcp/index.js
+```
+
+会话数据（`cookie.json`、后台登录浏览器配置）默认存放在 `~/.zhihu-mcp`，可用环境变量 `ZHIHU_MCP_DATA_DIR` 覆盖。也可用 `ZHIHU_COOKIE` 环境变量直接注入从浏览器复制的 Cookie 串。
+
+**提供的工具：**
+
+| 工具 | 说明 |
+| --- | --- |
+| `zhihu_login` | 打开浏览器扫码登录，保存会话（约 3 分钟内完成） |
+| `zhihu_whoami` | 返回当前登录用户 |
+| `zhihu_get_question` | 按问题 id 获取问题与前若干回答 |
+| `zhihu_get_answer` / `zhihu_get_article` | 获取单个回答 / 专栏文章 |
+| `zhihu_publish_answer` | 用 Markdown 在某问题下发布新回答（**公开**） |
+| `zhihu_update_answer` | 修改已有回答 |
+| `zhihu_publish_article` | 用 Markdown 发布新专栏文章（**公开**） |
+| `zhihu_create_draft` | 用 Markdown 创建**私密草稿**（不公开），返回草稿 id 与编辑链接 |
+| `zhihu_get_draft` | 读取草稿标题与正文 |
+| `zhihu_update_draft` | 修改草稿标题/正文（仍为私密） |
+| `zhihu_publish_draft` | 将已有草稿**公开**发布 |
+| `zhihu_delete_draft` | 删除草稿 |
+
+推荐的安全写作流：`zhihu_create_draft` → `zhihu_get_draft`/`zhihu_update_draft` 反复打磨 →
+确认后 `zhihu_publish_draft` 发布（或 `zhihu_delete_draft` 丢弃）。草稿全程私密，只有
+`publish` 类工具才会公开内容。
+
+**同样的草稿能力也内置在 VSCode 扩展里**：在 Markdown 文件中右键或命令面板执行
+`Zhihu: Save as Draft`（正文首行的 `# 一级标题` 会作为草稿标题，否则会提示输入）。
+首次保存会在文件顶部写入 `#! https://zhuanlan.zhihu.com/p/<id>` 追踪该草稿，再次
+`Save as Draft` 即更新同一草稿；确认满意后执行 `Zhihu: Publish Draft` 公开发布。
+
+> 说明：阅读走无头浏览器抓取页面内嵌数据（知乎内容 API 有 `x-zse-96` 反爬签名）；发布/草稿走普通 HTTP API（仅需 cookie + `x-xsrftoken`）。需要本机安装 Chrome 或 Edge（用于登录与阅读）。
+
 ## ⚡ Features
 
 - 登录

@@ -7,6 +7,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { AccountService } from "./service/account.service";
 import { AuthenticateService } from "./service/authenticate.service";
+import { DraftService } from "./service/draft.service";
 import { CollectionService } from "./service/collection.service";
 import { EventService } from "./service/event.service";
 import { HttpService, clearCache } from "./service/http.service";
@@ -22,6 +23,7 @@ import { EventTreeItem, FeedTreeItem, FeedTreeViewProvider } from "./treeview/fe
 import { HotStoryTreeViewProvider } from "./treeview/hotstory-treeview-provider";
 import { setContext } from "./global/globa-var";
 import { Output } from "./global/logger";
+import { setEnv } from "./core/env";
 import * as CacheManager from "./global/cache";
 import { ZhihuCompletionProvider, AtPeople } from "./lang/completion-provider";
 import { mermaiSupport } from "./util/mermai-support";
@@ -33,6 +35,12 @@ export async function activate( context: vscode.ExtensionContext ) {
         fs.createWriteStream( path.join( context.extensionPath, "./cookie.json" ) ).end();
     }
     setContext( context );
+    // Configure the vscode-free core (cookie storage, logging, settings).
+    setEnv( {
+        dataDir: context.extensionPath,
+        log: ( message: string, level?: string ) => Output( message, level ),
+        getSetting: ( key: string ) => vscode.workspace.getConfiguration( "zhihu" ).get( key ),
+    } );
     // Dependency Injection
     showReleaseNote();
     const zhihuMdParser = new MarkdownIt( { html: true } ).use( markdown_it_zhihu );
@@ -96,6 +104,11 @@ export async function activate( context: vscode.ExtensionContext ) {
         return authenticateService.logout();
     }
     );
+
+    // Draft authoring (private until published)
+    const draftService = new DraftService();
+    vscode.commands.registerCommand( "zhihu.saveDraft", () => draftService.saveDraft() );
+    vscode.commands.registerCommand( "zhihu.publishDraft", () => draftService.publishDraft() );
     vscode.window.registerTreeDataProvider(
         "zhihu-feed",
         feedTreeViewProvider
