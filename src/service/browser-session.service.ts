@@ -2,6 +2,7 @@ import * as cp from "child_process";
 import * as path from "path";
 import { getExtensionPath } from "../global/globa-var";
 import { Output } from "../global/logger";
+import { ZhihuUserAgent } from "../const/HTTP";
 import { findBrowser, getFreePort, httpGetJson, CDPClient } from "./browser-cookie.service";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -19,102 +20,132 @@ export interface QuestionData {
 }
 
 /**
- * Reads Zhihu content by driving a real (off-screen) browser.
+ * Reads Zhihu content by driving a headless browser.
  *
  * Zhihu's content APIs are gated behind anti-bot request signatures (x-zse-96)
- * that only its own page JavaScript produces; headless browsers and
- * CDP-initiated navigations are detected and blocked. Empirically, the only
- * thing Zhihu serves is a normal top-level navigation started from the browser
- * command line. So for each read we launch the browser with the target URL as a
- * startup argument, let it render (running Zhihu's JS, passing anti-bot), then
- * read the data Zhihu embeds in the page's `js-initialData` script tag over the
- * DevTools Protocol, and shut the browser down.
+ * that only its own page JavaScript produces, so instead of calling the API we
+ * load the real page in a browser (which runs that JS) and read the data Zhihu
+ * embeds in the page's `js-initialData` script tag over the DevTools Protocol.
  *
- * Reuses the `.browser-login-profile` from login so it shares the signed-in
- * session. Reads are serialized and the browser process tree is fully killed
- * between reads to avoid same-profile launch contention (a second launch on a
- * live profile just forwards to the first instance and exits).
+ * The browser runs fully headless (no visible window). Two tweaks are required
+ * to get past Zhihu's automation detection — the same ones the community
+ * zhihu-fisher extension uses:
+ *   - override the User-Agent (the default headless UA contains "HeadlessChrome")
+ *   - spoof `navigator.webdriver` to undefined
+ *
+ * One browser is launched lazily and reused; each read opens a throwaway tab,
+ * navigates, extracts, and closes. Reads are serialized. The browser reuses the
+ * `.browser-login-profile` so it shares the signed-in session (public content
+ * also works when logged out).
  */
 
-let queue: Promise<any> = Promise.resolve();
+const WEBDRIVER_SPOOF = 'Object.defineProperty(navigator,"webdriver",{get:()=>undefined});';
 
-function profileDir(): string {
-	return path.join(getExtensionPath(), ".browser-login-profile");
-}
+class BrowserSession {
+	private child: cp.ChildProcess | null = null;
+	private browserCdp: CDPClient | null = null;
+	private port = 0;
+	private starting: Promise<void> | null = null;
+	private queue: Promise<any> = Promise.resolve();
 
-function killTree(pid: number | undefined, child: cp.ChildProcess) {
-	if (pid && process.platform === "win32") {
-		try {
-			cp.execSync(`taskkill /PID ${pid} /T /F`, { stdio: "ignore" });
-			return;
-		} catch {
-			/* fall through to child.kill */
+	private profileDir(): string {
+		return path.join(getExtensionPath(), ".browser-login-profile");
+	}
+
+	private async start(): Promise<void> {
+		const browser = findBrowser();
+		if (!browser) {
+			throw new Error("未找到 Chrome/Edge 浏览器，无法加载知乎内容。请先安装 Chrome 或 Edge。");
 		}
-	}
-	try {
-		child.kill();
-	} catch {
-		/* noop */
-	}
-}
+		this.port = await getFreePort();
+		const args = [
+			`--remote-debugging-port=${this.port}`,
+			`--user-data-dir=${this.profileDir()}`,
+			"--no-first-run",
+			"--no-default-browser-check",
+			"--remote-allow-origins=*",
+			`--user-agent=${ZhihuUserAgent}`,
+			"--headless=new",
+			"--disable-features=UseEcoQoSForBackgroundProcess",
+			"about:blank",
+		];
+		Output(`启动后台浏览器加载知乎内容 (${browser.name})...`, "info");
+		this.child = cp.spawn(browser.path, args, { stdio: "ignore", detached: false });
+		this.child.on("exit", () => {
+			this.child = null;
+			this.browserCdp = null;
+		});
 
-/**
- * Launch the browser at `url`, evaluate `extractorExpr` in the page until it
- * returns a non-null JSON string (or a {__blocked:1} marker), and return the
- * parsed value. `extractorExpr` is a JS expression string evaluated in the page.
- */
-async function launchAndExtract(url: string, extractorExpr: string): Promise<any> {
-	const browser = findBrowser();
-	if (!browser) {
-		throw new Error("未找到 Chrome/Edge 浏览器，无法加载知乎内容。请先安装 Chrome 或 Edge。");
-	}
-	const port = await getFreePort();
-	const args = [
-		`--remote-debugging-port=${port}`,
-		`--user-data-dir=${profileDir()}`,
-		"--no-first-run",
-		"--no-default-browser-check",
-		"--remote-allow-origins=*",
-		// A real (non-headless) window positioned off-screen: Zhihu's anti-bot
-		// accepts it, but the user never sees it.
-		"--window-position=-2400,-2400",
-		url,
-	];
-	Output(`加载知乎内容: ${url}`, "info");
-	const child = cp.spawn(browser.path, args, { stdio: "ignore", detached: false });
-	const exited = new Promise<void>((r) => child.on("exit", () => r()));
-
-	try {
-		// Find the page target for our URL.
-		let pageWsUrl: string | undefined;
-		for (let i = 0; i < 50; i++) {
+		let version: any;
+		for (let i = 0; i < 60; i++) {
 			try {
-				const list: any[] = await httpGetJson(`http://127.0.0.1:${port}/json/list`);
-				const page = list.find(
-					(t) => t.type === "page" && t.webSocketDebuggerUrl && /zhihu\.com/.test(t.url),
-				);
+				version = await httpGetJson(`http://127.0.0.1:${this.port}/json/version`);
+				if (version && version.webSocketDebuggerUrl) break;
+			} catch {
+				/* not ready */
+			}
+			await sleep(300);
+		}
+		if (!version || !version.webSocketDebuggerUrl) {
+			throw new Error("无法连接后台浏览器调试端口");
+		}
+		this.browserCdp = await CDPClient.connect(version.webSocketDebuggerUrl);
+	}
+
+	private async ensureStarted(): Promise<void> {
+		if (this.browserCdp && this.child) return;
+		if (!this.starting) {
+			this.starting = this.start().finally(() => {
+				this.starting = null;
+			});
+		}
+		await this.starting;
+	}
+
+	private async doFetch(url: string, extractorExpr: string): Promise<any> {
+		await this.ensureStarted();
+		if (!this.browserCdp) throw new Error("后台浏览器不可用");
+
+		const created = await this.browserCdp.send("Target.createTarget", { url: "about:blank" });
+		const targetId = created && created.targetId;
+		if (!targetId) throw new Error("无法创建后台标签页");
+
+		// Find the new tab's page debugger endpoint.
+		let pageWsUrl: string | undefined;
+		for (let i = 0; i < 40; i++) {
+			try {
+				const list: any[] = await httpGetJson(`http://127.0.0.1:${this.port}/json/list`);
+				const page = list.find((t) => t.id === targetId && t.webSocketDebuggerUrl);
 				if (page) {
 					pageWsUrl = page.webSocketDebuggerUrl;
 					break;
 				}
 			} catch {
-				/* browser not ready */
+				/* retry */
 			}
-			await sleep(300);
+			await sleep(200);
 		}
 		if (!pageWsUrl) {
-			throw new Error("无法连接后台浏览器页面，请重试。");
+			await this.browserCdp.send("Target.closeTarget", { targetId }).catch(() => undefined);
+			throw new Error("无法打开后台标签页");
 		}
 
-		const cdp = await CDPClient.connect(pageWsUrl);
+		const page = await CDPClient.connect(pageWsUrl);
 		try {
-			await cdp.send("Runtime.enable");
+			await page.send("Page.enable");
+			await page.send("Runtime.enable");
+			await page.send("Network.enable");
+			// Anti-automation-detection: normal UA + hide navigator.webdriver.
+			await page.send("Network.setUserAgentOverride", { userAgent: ZhihuUserAgent });
+			await page.send("Page.addScriptToEvaluateOnNewDocument", { source: WEBDRIVER_SPOOF });
+			await page.send("Page.navigate", { url });
+
 			const deadline = Date.now() + 25000;
 			while (Date.now() < deadline) {
 				await sleep(700);
 				let value: string | null = null;
 				try {
-					const res = await cdp.send("Runtime.evaluate", {
+					const res = await page.send("Runtime.evaluate", {
 						expression: extractorExpr,
 						returnByValue: true,
 					});
@@ -136,22 +167,44 @@ async function launchAndExtract(url: string, extractorExpr: string): Promise<any
 			}
 			throw new Error("加载知乎内容超时，请重试。");
 		} finally {
-			cdp.close();
+			page.close();
+			await this.browserCdp.send("Target.closeTarget", { targetId }).catch(() => undefined);
 		}
-	} finally {
-		killTree(child.pid, child);
-		// Wait for the process (and its children) to release the profile lock
-		// before the next queued read launches on the same profile.
-		await Promise.race([exited, sleep(3000)]);
-		await sleep(1200);
+	}
+
+	/** Serialize reads so tabs don't pile up and overwhelm the browser. */
+	public fetch(url: string, extractorExpr: string): Promise<any> {
+		const task = this.queue.then(() => this.doFetch(url, extractorExpr));
+		this.queue = task.catch(() => undefined);
+		return task;
+	}
+
+	public dispose() {
+		try {
+			this.browserCdp?.close();
+		} catch {
+			/* noop */
+		}
+		const child = this.child;
+		if (child && child.pid && process.platform === "win32") {
+			try {
+				cp.execSync(`taskkill /PID ${child.pid} /T /F`, { stdio: "ignore" });
+			} catch {
+				try { child.kill(); } catch { /* noop */ }
+			}
+		} else {
+			try { child?.kill(); } catch { /* noop */ }
+		}
+		this.browserCdp = null;
+		this.child = null;
+		this.starting = null;
 	}
 }
 
-/** Serialize reads so only one browser uses the profile at a time. */
-function enqueue<T>(fn: () => Promise<T>): Promise<T> {
-	const task = queue.then(fn);
-	queue = task.catch(() => undefined);
-	return task;
+let session: BrowserSession | null = null;
+function getSession(): BrowserSession {
+	if (!session) session = new BrowserSession();
+	return session;
 }
 
 // In-page mapper from Zhihu's camelCase entity to the pug template shape.
@@ -171,7 +224,7 @@ export function fetchQuestion(id: string): Promise<QuestionData> {
 		if(answers.length===0)return null;
 		return JSON.stringify({title:q.title||"",detail:q.detail||"",answers:answers});
 	`);
-	return enqueue(() => launchAndExtract(`https://www.zhihu.com/question/${id}`, expr));
+	return getSession().fetch(`https://www.zhihu.com/question/${id}`, expr);
 }
 
 export function fetchAnswer(id: string): Promise<{ title: string; answer: ZhihuAuthored }> {
@@ -182,7 +235,7 @@ export function fetchAnswer(id: string): Promise<{ title: string; answer: ZhihuA
 		var q=qid?e.questions[qid]:{};
 		return JSON.stringify({title:(a.question&&a.question.title)||q.title||"\\u77e5\\u4e4e\\u56de\\u7b54",answer:map(a)});
 	`);
-	return enqueue(() => launchAndExtract(`https://www.zhihu.com/answer/${id}`, expr));
+	return getSession().fetch(`https://www.zhihu.com/answer/${id}`, expr);
 }
 
 export function fetchArticle(id: string): Promise<ZhihuAuthored & { title: string }> {
@@ -192,10 +245,11 @@ export function fetchArticle(id: string): Promise<ZhihuAuthored & { title: strin
 		var m=map(a);m.title=a.title||"\\u77e5\\u4e4e\\u6587\\u7ae0";
 		return JSON.stringify(m);
 	`);
-	return enqueue(() => launchAndExtract(`https://zhuanlan.zhihu.com/p/${id}`, expr));
+	return getSession().fetch(`https://zhuanlan.zhihu.com/p/${id}`, expr);
 }
 
-/** No persistent browser is kept; nothing to dispose. Kept for API stability. */
+/** Shut down the background browser (call on extension deactivate, and before login). */
 export function disposeBrowserSession() {
-	/* no-op: browsers are launched per-read and killed immediately */
+	session?.dispose();
+	session = null;
 }

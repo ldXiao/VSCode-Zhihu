@@ -7,6 +7,7 @@ import { WebviewService } from "./webview.service";
 import { Output } from "../global/logger";
 import { getCookieJar, saveCookieJar } from "../global/cookie";
 import { loginViaBrowser, findBrowser, BrowserCookie } from "./browser-cookie.service";
+import { disposeBrowserSession } from "./browser-session.service";
 
 /**
  * Authentication for the Zhihu extension.
@@ -74,6 +75,10 @@ export class AuthenticateService {
 			return this.cookieLogin();
 		}
 
+		// Free the shared browser profile before login launches its own browser
+		// on it (a second instance on the same profile just forwards and exits).
+		disposeBrowserSession();
+
 		let cookies: BrowserCookie[] | undefined;
 		try {
 			cookies = await vscode.window.withProgress(
@@ -84,7 +89,7 @@ export class AuthenticateService {
 				},
 				(progress, token) => loginViaBrowser(token, progress),
 			);
-		} catch (error) {
+		} catch (error: any) {
 			Output(`浏览器登录失败: ${error.message || error}`, "error");
 			const choice = await vscode.window.showWarningMessage(
 				`浏览器登录未完成：${error.message || error}`,
