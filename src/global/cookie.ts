@@ -1,79 +1,72 @@
 import { getExtensionPath } from "./globa-var";
-import * as path from "path"
+import * as path from "path";
 import * as toughCookie from "tough-cookie";
-const { CookieJar } = toughCookie;
+const { CookieJar, MemoryCookieStore } = toughCookie;
 import { writeFileSync, readFileSync, existsSync } from "fs";
 
-// Simple fallback cookie store implementation
-class SimpleCookieStore {
-    private filePath: string;
+/**
+ * Cookie persistence for the extension.
+ *
+ * The session cookies (z_c0, d_c0, __zse_ck, ...) obtained at login must survive
+ * VSCode restarts, otherwise the user is logged out every session. We keep a
+ * single in-memory CookieJar and persist the whole jar to `cookie.json` via
+ * tough-cookie's own serialization. Call {@link saveCookieJar} after mutating
+ * cookies (login import, response Set-Cookie) to write them to disk.
+ *
+ * This replaces the previous tough-cookie-file-store setup, whose fragile
+ * fallback store silently failed to persist inside the webpack bundle.
+ */
 
-    constructor(filePath: string) {
-        this.filePath = filePath;
-    }
+let cookieJar: any;
 
-    findCookie(domain: string, path: string, key: string, cb: (err: any, cookie: any) => void) {
-        try {
-            const cookies = this.loadCookies();
-            const cookie = cookies.find((c: any) => c.key === key);
-            cb(null, cookie);
-        } catch (err) {
-            cb(err, null);
-        }
-    }
-
-    removeCookies(domain: string, path: string, cb: (err: any) => void) {
-        try {
-            writeFileSync(this.filePath, JSON.stringify([]));
-            cb(null);
-        } catch (err) {
-            cb(err);
-        }
-    }
-
-    private loadCookies() {
-        try {
-            if (existsSync(this.filePath)) {
-                const data = readFileSync(this.filePath, 'utf8');
-                return JSON.parse(data || '[]');
-            }
-            return [];
-        } catch {
-            return [];
-        }
-    }
-}
-
-var store: any;
-var cookieJar: any;
-
-export function getCookieStore() {
-    loadCookie()
-    return store
-}
-
-export function clearCookieStore() {
-    writeFileSync(path.join(getExtensionPath(), './cookie.json'), '[]');
-}
-
-export function getCookieJar() {
-    loadCookie()
-    return cookieJar
+function cookieFilePath(): string {
+	return path.join(getExtensionPath(), "./cookie.json");
 }
 
 function loadCookie() {
-    if (!store) {
-        try {
-            // Try to use tough-cookie-file-store if available
-            const FileCookieStore = require('tough-cookie-file-store').FileCookieStore;
-            store = new FileCookieStore(path.join(getExtensionPath(), './cookie.json'));
-        } catch (error) {
-            // Fallback to simple store if tough-cookie-file-store fails
-            console.log('Using fallback cookie store:', error.message);
-            store = new SimpleCookieStore(path.join(getExtensionPath(), './cookie.json'));
-        }
-    }
-    if (!cookieJar) {
-        cookieJar = new CookieJar(store);
-    }
+	if (cookieJar) return;
+	const filePath = cookieFilePath();
+	try {
+		if (existsSync(filePath)) {
+			const raw = readFileSync(filePath, "utf8").trim();
+			if (raw && raw !== "[]" && raw !== "{}") {
+				cookieJar = CookieJar.deserializeSync(JSON.parse(raw), new MemoryCookieStore());
+				return;
+			}
+		}
+	} catch (error) {
+		console.log("加载 cookie 失败，将重新开始:", error && error.message);
+	}
+	cookieJar = new CookieJar(new MemoryCookieStore());
+}
+
+export function getCookieJar() {
+	loadCookie();
+	return cookieJar;
+}
+
+/** The underlying cookie store (used for xsrf/token lookups and removal). */
+export function getCookieStore() {
+	loadCookie();
+	return cookieJar.store;
+}
+
+/** Persist the current jar to cookie.json. Safe to call frequently. */
+export function saveCookieJar() {
+	loadCookie();
+	try {
+		writeFileSync(cookieFilePath(), JSON.stringify(cookieJar.serializeSync()));
+	} catch (error) {
+		console.log("保存 cookie 失败:", error && error.message);
+	}
+}
+
+/** Drop all cookies, in memory and on disk. */
+export function clearCookieStore() {
+	cookieJar = new CookieJar(new MemoryCookieStore());
+	try {
+		writeFileSync(cookieFilePath(), "{}");
+	} catch (error) {
+		console.log("清除 cookie 失败:", error && error.message);
+	}
 }

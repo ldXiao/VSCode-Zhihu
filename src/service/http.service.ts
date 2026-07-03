@@ -7,6 +7,7 @@ import {
     getCookieJar,
     getCookieStore,
     clearCookieStore,
+    saveCookieJar,
 } from "../global/cookie";
 import { Output } from "../global/logger";
 import { IProfile } from "../model/target/target";
@@ -88,6 +89,7 @@ export class HttpService {
                                 }
                             );
                         });
+                    saveCookieJar();
                 }
                 if (options.enableCache) {
                     this.cache[options.uri] = resp;

@@ -40,7 +40,7 @@ export function findBrowser(): { path: string; name: string } | null {
 	return null;
 }
 
-function getFreePort(): Promise<number> {
+export function getFreePort(): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const srv = net.createServer();
 		srv.unref();
@@ -52,7 +52,7 @@ function getFreePort(): Promise<number> {
 	});
 }
 
-function httpGetJson(url: string): Promise<any> {
+export function httpGetJson(url: string): Promise<any> {
 	return new Promise((resolve, reject) => {
 		http.get(url, (res) => {
 			let data = "";
@@ -71,7 +71,7 @@ function httpGetJson(url: string): Promise<any> {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Minimal Chrome DevTools Protocol client over a single WebSocket. */
-class CDPClient {
+export class CDPClient {
 	private ws: WebSocket;
 	private id = 0;
 	private pending = new Map<number, { resolve: (v: any) => void; reject: (e: any) => void }>();

@@ -5,7 +5,7 @@ import { clearCookie } from "./http.service";
 import { ProfileService } from "./profile.service";
 import { WebviewService } from "./webview.service";
 import { Output } from "../global/logger";
-import { getCookieJar } from "../global/cookie";
+import { getCookieJar, saveCookieJar } from "../global/cookie";
 import { loginViaBrowser, findBrowser, BrowserCookie } from "./browser-cookie.service";
 
 /**
@@ -101,6 +101,7 @@ export class AuthenticateService {
 		}
 
 		this.loadCookiesIntoJar(cookies);
+		saveCookieJar();
 		return this.finishLogin();
 	}
 
@@ -135,6 +136,7 @@ export class AuthenticateService {
 			}
 		}
 		Output(`导入了 ${count} 个 cookie`, "info");
+		saveCookieJar();
 		return this.finishLogin();
 	}
 

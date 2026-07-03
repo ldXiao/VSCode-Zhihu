@@ -10,6 +10,7 @@ import { IQuestionAnswerTarget, IQuestionTarget, ITarget } from "../model/target
 import { CollectionTreeviewProvider } from "../treeview/collection-treeview-provider";
 import { CollectionService, ICollectionItem } from "./collection.service";
 import { HttpService, sendRequest } from "./http.service";
+import { fetchQuestion, fetchAnswer, fetchArticle } from "./browser-session.service";
 import { getExtensionPath, getSubscriptions } from "../global/globa-var";
 
 export interface IWebviewPugRender {
@@ -58,93 +59,70 @@ export class WebviewService {
 			return;
 		}
 
-		if (object.type == MediaTypes.question) {
+		const useVSTheme = vscode.workspace.getConfiguration('zhihu').get(SettingEnum.useVSTheme);
 
-			const includeContent = "data[*].is_normal,content,voteup_count;";
-			let offset = 0;
-			let questionAPI = `${QuestionAPI}/${object.id}?include=detail%2cexcerpt`;
-			let answerAPI = `${QuestionAPI}/${object.id}/answers?include=${includeContent}?offset=${offset}`;
-			let question: IQuestionTarget = await sendRequest({
-				uri: questionAPI,
-				json: true,
-				gzip: true
-			});
-			let body: { data: IQuestionAnswerTarget[] } = await sendRequest({
-				uri: answerAPI,
-				json: true,
-				gzip: true
-			});
-			let useVSTheme = vscode.workspace.getConfiguration('zhihu').get(SettingEnum.useVSTheme);
-
-			let panel = this.renderHtml({
-				title: "知乎问题",
-				pugTemplatePath: path.join(
-					getExtensionPath(),
-					TemplatePath,
-					"questions-answers.pug"
-				),
-				pugObjects: {
-					answers: body.data.map(t => {  
-						t.content = this.actualSrcNormalize(t.content);
-						return t;
-					}),
-					title: question.title,
-					subTitle: question.detail,
-					useVSTheme: useVSTheme
+		try {
+			if (object.type == MediaTypes.question) {
+				const data = await vscode.window.withProgress(
+					{ location: vscode.ProgressLocation.Notification, title: "加载知乎问题..." },
+					() => fetchQuestion(String(object.id)),
+				);
+				if (!data || !data.answers || data.answers.length === 0) {
+					vscode.window.showWarningMessage('未获取到回答，可能需要登录或稍后重试。');
+					return;
 				}
-			})
-			this.registerEvent(panel, { type: MediaTypes.question, id: object.id }, `${QuestionURL}/${question.id}`);
-		} else if (object.type == MediaTypes.answer) {
-			let body: IQuestionAnswerTarget = await sendRequest({
-				uri: `${AnswerAPI}/${object.id}?include=data[*].content,excerpt,voteup_count`,
-				json: true,
-				gzip: true
-			})
-			let useVSTheme = vscode.workspace.getConfiguration('zhihu').get(SettingEnum.useVSTheme);
-			body.content = this.actualSrcNormalize(body.content);
-			let panel = this.renderHtml({
-				title: "知乎回答",
-				pugTemplatePath: path.join(
-					getExtensionPath(),
-					TemplatePath,
-					"questions-answers.pug"
-				),
-				pugObjects: {
-					answers: [
-						body
-					],
-					title: object.question.name,
-					useVSTheme
+				data.answers.forEach((a) => (a.content = this.actualSrcNormalize(a.content)));
+				const panel = this.renderHtml({
+					title: "知乎问题",
+					pugTemplatePath: path.join(getExtensionPath(), TemplatePath, "questions-answers.pug"),
+					pugObjects: {
+						answers: data.answers,
+						title: data.title || object.title || "知乎问题",
+						subTitle: data.detail || "",
+						useVSTheme,
+					},
+				});
+				this.registerEvent(panel, { type: MediaTypes.question, id: object.id }, `${QuestionURL}/${object.id}`);
+			} else if (object.type == MediaTypes.answer) {
+				const data = await vscode.window.withProgress(
+					{ location: vscode.ProgressLocation.Notification, title: "加载知乎回答..." },
+					() => fetchAnswer(String(object.id)),
+				);
+				if (!data || !data.answer || data.answer.content == undefined) {
+					vscode.window.showWarningMessage('未获取到回答内容，可能需要登录或稍后重试。');
+					return;
 				}
-			})
-			this.registerEvent(panel, { type: MediaTypes.answer, id: object.id }, `${AnswerURL}/${body.id}`)
-		} else if (object.type == MediaTypes.article) {
-			if (!object.url) {
-				vscode.window.showErrorMessage('文章缺少URL信息');
-				return;
+				data.answer.content = this.actualSrcNormalize(data.answer.content);
+				const panel = this.renderHtml({
+					title: "知乎回答",
+					pugTemplatePath: path.join(getExtensionPath(), TemplatePath, "questions-answers.pug"),
+					pugObjects: { answers: [data.answer], title: data.title, useVSTheme },
+				});
+				this.registerEvent(panel, { type: MediaTypes.answer, id: object.id }, `${AnswerURL}/${object.id}`);
+			} else if (object.type == MediaTypes.article) {
+				const articleId = object.id || (object.url ? String(object.url).split('/').pop() : undefined);
+				if (!articleId) {
+					vscode.window.showErrorMessage('文章缺少ID信息');
+					return;
+				}
+				const article = await vscode.window.withProgress(
+					{ location: vscode.ProgressLocation.Notification, title: "加载知乎文章..." },
+					() => fetchArticle(String(articleId)),
+				);
+				if (!article || article.content == undefined) {
+					vscode.window.showWarningMessage('未获取到文章内容，可能需要登录或稍后重试。');
+					return;
+				}
+				article.content = this.actualSrcNormalize(article.content);
+				const panel = this.renderHtml({
+					title: "知乎文章",
+					pugTemplatePath: path.join(getExtensionPath(), TemplatePath, "article.pug"),
+					pugObjects: { article, title: article.title || "知乎文章", useVSTheme },
+				});
+				this.registerEvent(panel, { type: MediaTypes.article, id: articleId }, `${ZhuanlanURL}${articleId}`);
 			}
-			let article: IArticle = await sendRequest({
-				uri: `${object.url}?include=voteup_count`,
-				json: true,
-				gzip: true,
-				headers: null
-			});
-			let useVSTheme = vscode.workspace.getConfiguration('zhihu').get(SettingEnum.useVSTheme);
-			article.content = this.actualSrcNormalize(article.content);
-			let panel = this.renderHtml({
-				title: "知乎文章",
-				pugTemplatePath: path.join(
-					getExtensionPath(),
-					TemplatePath,
-					"article.pug"
-				),
-				pugObjects: {
-					article: article,
-					title: article.title,
-					useVSTheme
-				}
-			})
-			this.registerEvent(panel, { type: MediaTypes.article, id: object.id }, `${ZhuanlanURL}${article.id}`)
+		} catch (error) {
+			vscode.window.showErrorMessage(`加载失败：${error.message || error}`);
 		}
 	}
 
