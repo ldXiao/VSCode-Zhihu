@@ -37,13 +37,19 @@ export enum LoginEnum {
 	sms,
 	password,
 	qrcode,
-	weixin
+	weixin,
+	cookie,
+	browser
 }
 
 export const LoginTypes = [
-	{ value: LoginEnum.qrcode, ch: '二维码'},
+	{ value: LoginEnum.browser, ch: '从浏览器导入登录 (推荐)' },
+	{ value: LoginEnum.cookie, ch: '手动粘贴 Cookie 登录' },
+	// The flows below rely on zhihu login APIs that are gated behind anti-bot
+	// signatures and no longer work from a non-browser client.
+	// { value: LoginEnum.qrcode, ch: '二维码'},
 	// { value: LoginEnum.sms, ch: '短信验证码' },
-	{ value: LoginEnum.weixin, ch: '微信'},
+	// { value: LoginEnum.weixin, ch: '微信'},
 	// { value: LoginEnum.password, ch: '密码' },
 ];
 

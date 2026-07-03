@@ -17,3 +17,5 @@ cache.json
 **/images
 .vscode-test
 *.log
+.browser-login-profile
+.browser-login-profile-smoke

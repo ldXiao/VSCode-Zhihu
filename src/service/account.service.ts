@@ -1,5 +1,5 @@
 
-import { SelfProfileAPI, SignUpRedirectPage } from "../const/URL";
+import { SelfProfileAPI } from "../const/URL";
 import { IProfile } from "../model/target/target";
 import { sendRequest } from "./http.service";
 
@@ -9,57 +9,38 @@ export class AccountService {
 
 	constructor () {}
 
+	/**
+	 * Fetch the logged-in user via /api/v4/me. Returns the parsed response body
+	 * (with a truthy `id`/`name` when authenticated) or null on failure.
+	 */
+	private async fetchMe(): Promise<any> {
+		try {
+			const resp = await sendRequest({
+				uri: `${SelfProfileAPI}?include=is_realname`,
+				json: true,
+				simple: false,
+				resolveWithFullResponse: true,
+			});
+			if (resp && resp.statusCode === 200 && resp.body && (resp.body.id || resp.body.name)) {
+				return resp.body;
+			}
+			return null;
+		} catch (err) {
+			console.error('fetchMe failed', err);
+			return null;
+		}
+	}
+
 	async fetchProfile() {
-		this.profile  = await sendRequest({
-			uri: SelfProfileAPI,
-			json: true
-		});
+		this.profile = await this.fetchMe();
 	}
 
 	async isAuthenticated(): Promise<boolean> {
-
-		let checkIfSignedIn;
-		try {
-			checkIfSignedIn = await sendRequest({
-				uri: SignUpRedirectPage,
-				followRedirect: false,
-				followAllRedirects: false,
-				resolveWithFullResponse: true,
-				gzip: true,
-				simple: false
-			});
-		} catch (err) {
-			console.error('Http error', err);
-			return false;
+		const me = await this.fetchMe();
+		if (me) {
+			this.profile = me;
+			return true;
 		}
-		
-		// Check if we got a 302 redirect
-		const is302Redirect = checkIfSignedIn ? checkIfSignedIn.statusCode == 302 : false;
-		
-		if (is302Redirect) {
-			// Double-check by trying to fetch profile
-			try {
-				const profileCheck = await sendRequest({
-					uri: SelfProfileAPI,
-					json: true,
-					simple: false,
-					resolveWithFullResponse: true
-				});
-				
-				// If we can successfully get profile data, we're truly authenticated
-				if (profileCheck.statusCode === 200 && profileCheck.body && profileCheck.body.name) {
-					return true;
-				} else {
-					// 302 redirect but no valid profile - likely not authenticated
-					console.log('302 redirect but invalid profile response:', profileCheck.statusCode);
-					return false;
-				}
-			} catch (profileErr) {
-				console.error('Profile check failed:', profileErr);
-				return false;
-			}
-		}
-		
 		return false;
 	}
 

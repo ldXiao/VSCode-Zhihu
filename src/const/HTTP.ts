@@ -1,12 +1,29 @@
+/**
+ * Modern desktop Chrome UA. Keep this in sync with a real recent browser —
+ * Zhihu's anti-bot cookie (__zse_ck) is minted against the UA that generated
+ * it, so the UA used here should match the browser the cookies came from.
+ */
+export const ZhihuUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+	'(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 export const DefaultHTTPHeader = {
-	'accept-encoding': 'gzip',
-	// 'Host': 'www.zhihu.com',
-	// 'Referer': 'https://www.zhihu.com/',
-	'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-		'(KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36',
+	'User-Agent': ZhihuUserAgent,
 	'content-type': 'application/x-www-form-urlencoded',
-	// 'x-zse-83': '3_1.1',
-	// 'x-xsrftoken': 'dCyt1Kb97IN7jeh5SJo92A9mw2bvv9Es',
+}
+
+/**
+ * Headers that make an authenticated zhihu.com API request look like it came
+ * from the web app. Combined with valid browser cookies (notably `z_c0` and
+ * `__zse_ck`) this is sufficient for endpoints like /api/v4/me — no reverse
+ * engineered x-zse-96 signature is required.
+ */
+export const ZhihuApiHeader = {
+	'User-Agent': ZhihuUserAgent,
+	'Accept': 'application/json, text/plain, */*',
+	'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+	'Referer': 'https://www.zhihu.com/',
+	'x-requested-with': 'fetch',
+	'x-zse-93': '101_3_3.0',
 }
 
 export const LoginPostHeader = {

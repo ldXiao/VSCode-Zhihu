@@ -1,7 +1,7 @@
 import * as httpClient from "request-promise";
 import * as toughCookie from "tough-cookie";
 const { Cookie, CookieJar } = toughCookie;
-import { DefaultHTTPHeader } from "../const/HTTP";
+import { DefaultHTTPHeader, ZhihuApiHeader } from "../const/HTTP";
 import { ZhihuDomain } from "../const/URL";
 import {
     getCookieJar,
@@ -24,28 +24,31 @@ export class HttpService {
     constructor() {}
 
     public async sendRequest(options): Promise<any> {
-        if (options.headers == undefined) {
-            options.headers = DefaultHTTPHeader;
-            try {
-                options.headers["cookie"] = getCookieJar().getCookieStringSync(
-                    options.uri
-                );
-            } catch (error) {
-                console.log(error);
-            }
-        }
+        const isZhihuApi = typeof options.uri === "string" &&
+            /(^https?:\/\/(www\.|api\.)?zhihu\.com)|zhuanlan\.zhihu\.com/.test(options.uri);
+
+        // Merge caller headers on top of a browser-like default set. For zhihu
+        // API calls we include the headers the web app sends (referer,
+        // x-requested-with, x-zse-93) so requests are accepted with plain
+        // cookies and no reverse-engineered signature.
+        const baseHeaders = isZhihuApi
+            ? { ...DefaultHTTPHeader, ...ZhihuApiHeader }
+            : { ...DefaultHTTPHeader };
+        options.headers = { ...baseHeaders, ...(options.headers || {}) };
+
         if (this.xsrfToken) {
             options.headers["x-xsrftoken"] = this.xsrfToken;
         }
-        options.headers["cookie"] = getCookieJar().getCookieStringSync(
-            options.uri
-        );
-		// TODO 暂时删除导致json乱码的压缩方式
-        if (!options.isGzip) {
-            delete options.headers["accept-encoding"];
+        try {
+            options.headers["cookie"] = getCookieJar().getCookieStringSync(
+                options.uri
+            );
+        } catch (error) {
+            console.log(error);
         }
-        // options.headers['cookie'] = getCookieJar().getCookieStringSync('www.zhihu.com');
-        // headers['cookie'] = cookieService.getCookieString(options.uri);
+        // Let request/request-promise transparently decode gzip/deflate so JSON
+        // bodies are not returned as garbled compressed bytes.
+        options.gzip = true;
         var returnBody;
         if (
             options.resolveWithFullResponse == undefined ||

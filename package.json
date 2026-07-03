@@ -20,10 +20,6 @@
 		"onCommand:zhihu.jianshuPublish",
 		"onCommand:zhihu.search",
 		"onCommand:zhihu.login",
-		"onCommand:zhihu.forceLogin",
-		"onCommand:zhihu.testQrcode",
-		"onCommand:zhihu.testModernQrcode",
-		"onCommand:zhihu.debugHeaders",
 		"onCommand:zhihu.logout",
 		"onCommand:zhihu.previousPage",
 		"onCommand:zhihu.nextPage",
@@ -31,7 +27,6 @@
 		"onCommand:zhihu.uploadImageFromPath",
 		"onCommand:zhihu.uploadImageFromExplorer",
 		"onCommand:zhihu.atPeople",
-		"onCommand:zhihu.jianshuLogin",
 		"onView:zhihu-explorer",
 		"onLanguage:markdown"
 	],
@@ -88,10 +83,6 @@
 					"light": "res/media/light/refresh.svg",
 					"dark": "res/media/dark/refresh.svg"
 				}
-			},
-			{
-				"command": "zhihu.jianshuLogin",
-				"title": "Jianshu: Login"
 			},
 			{
 				"command": "zhihu.refreshCollection",
@@ -172,22 +163,6 @@
 					"light": "res/media/light/login.svg",
 					"dark": "res/media/dark/login.svg"
 				}
-			},
-			{
-				"command": "zhihu.forceLogin",
-				"title": "Zhihu: Force Login (Skip Auth Check)"
-			},
-			{
-				"command": "zhihu.testQrcode",
-				"title": "Zhihu: Test QR Code API"
-			},
-			{
-				"command": "zhihu.testModernQrcode",
-				"title": "Zhihu: Test Modern QR Code Login"
-			},
-			{
-				"command": "zhihu.debugHeaders",
-				"title": "Zhihu: Debug Anti-Bot Headers"
 			},
 			{
 				"command": "zhihu.logout",
@@ -369,12 +344,13 @@
 		"@types/pug": "^2.0.4",
 		"@types/request": "^2.48.4",
 		"@types/request-promise": "^4.1.45",
+		"@types/ws": "^8.18.1",
 		"@typescript-eslint/eslint-plugin": "^2.23.0",
 		"@typescript-eslint/eslint-plugin-tslint": "^2.23.0",
 		"@typescript-eslint/parser": "^2.23.0",
 		"babel-loader": "^8.2.2",
 		"css-loader": "^6.2.0",
-		"eslint": "^6.8.0",
+		"eslint": "^10.6.0",
 		"mini-css-extract-plugin": "^2.3.0",
 		"mocha": "^11.0.1",
 		"style-loader": "^3.2.1",
@@ -400,7 +376,7 @@
 		"jsdom": "^18.1.1",
 		"markdown-it": "^14.1.0",
 		"markdown-it-container": "^3.0.0",
-		"markdown-it-zhihu": "^2.0.10",
+		"markdown-it-zhihu": "^2.0.6",
 		"md5": "^2.2.1",
 		"mermaid": "^11.4.1",
 		"on-change": "^1.6.2",
@@ -409,7 +385,8 @@
 		"request-promise": "^4.2.6",
 		"tough-cookie": "^4.1.4",
 		"tough-cookie-file-store": "^2.0.3",
-		"vscode": "^1.1.37",
+		"vscode": "^1.1.36",
+		"ws": "^8.18.0",
 		"zhihu-encrypt": ">=1.0.0",
 		"zhihu-markdown": ">=1.0.3"
 	}

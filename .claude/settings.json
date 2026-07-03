@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.github.com)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/request-promise/package.json'\\).main\\)\")",
+      "Bash(node -e \"console.log\\(require.resolve\\('request-promise'\\)\\)\")",
+      "PowerShell(npm install request-promise@^4.2.6 request@^2.88.2 2>&1)",
+      "PowerShell(node -e \"console.log\\('resolved:', require.resolve\\('request-promise'\\)\\); console.log\\('version:', require\\('./node_modules/request-promise/package.json'\\).version\\)\")",
+      "Bash(ls README*.md)",
+      "Bash(head -20 README.md)"
+    ]
+  }
+}

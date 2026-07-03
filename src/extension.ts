@@ -56,7 +56,11 @@ export async function activate( context: vscode.ExtensionContext ) {
     const defualtMdParser = new MarkdownIt();
     const accountService = new AccountService();
     const profileService = new ProfileService( accountService );
-    await profileService.fetchProfile();
+    try {
+        await profileService.fetchProfile();
+    } catch ( error ) {
+        Output( `启动时获取用户信息失败（可忽略）: ${error}` );
+    }
     const collectionService = new CollectionService();
     const hotStoryTreeViewProvider = new HotStoryTreeViewProvider();
     const collectionTreeViewProvider = new CollectionTreeviewProvider( profileService, collectionService );
@@ -87,39 +91,10 @@ export async function activate( context: vscode.ExtensionContext ) {
         return authenticateService.login();
     }
     );
-    vscode.commands.registerCommand( "zhihu.forceLogin", () => {
-        return authenticateService.forceLogin();
-    }
-    );
-    vscode.commands.registerCommand( "zhihu.jianshuLogin", () => {
-        authenticateService.jianshuLogin();
-    } );
     vscode.commands.registerCommand( "zhihu.logout", () => {
         return authenticateService.logout();
     }
     );
-    
-    // Test command for QR code API
-    vscode.commands.registerCommand( "zhihu.testQrcode", () => {
-        return authenticateService.testQrcodeAPI();
-    }
-    );
-    
-    // Test command for modern QR code API
-    vscode.commands.registerCommand( "zhihu.testModernQrcode", () => {
-        return authenticateService.testQrcodeAPI();
-    }
-    );
-    
-    // Debug command to test anti-bot headers
-    vscode.commands.registerCommand("zhihu.debugHeaders", async () => {
-        try {
-            const result = await authenticateService.debugAntiBotHeaders();
-            vscode.window.showInformationMessage(`Headers debug completed: ${result}`);
-        } catch (error) {
-            vscode.window.showErrorMessage(`Headers debug failed: ${error.message}`);
-        }
-    });
     vscode.window.registerTreeDataProvider(
         "zhihu-feed",
         feedTreeViewProvider
